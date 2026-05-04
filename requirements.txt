@@ -1,0 +1,38 @@
+# Core ML
+# torch
+# torchvision
+# torchaudio
+
+# Data handling
+numpy
+pandas
+scikit-learn
+
+# Image / Video processing
+opencv-python
+Pillow
+
+# Visualization
+matplotlib
+seaborn
+
+# Explainability
+grad-cam
+scikit-image
+
+# Progress & utils
+tqdm
+pyyaml
+
+# Backend (API)
+flask
+flask-cors
+gunicorn
+
+# Optional (better performance / configs)
+albumentations
+timm
+
+# For notebooks (if needed)
+jupyter
+ipykernel
