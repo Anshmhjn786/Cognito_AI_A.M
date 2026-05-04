@@ -1,7 +1,7 @@
 # Core ML
-# torch
-# torchvision
-# torchaudio
+torch
+torchvision
+torchaudio
 
 # Data handling
 numpy

@@ -1,14 +1,31 @@
-# batch_size: 32
-# epochs: 10
-learning_rate: 0.0001
-# image_size: 224
-model_name: efficientnet_b0
-train_csv: ./data/raw/FaceForensics++_C23/csv/train.csv
-# val_csv: path
-test_csv: path
-device: cuda
+seed: 42
+device: auto
 
-epochs: 2
-batch_size: 8
-image_size: 128   # faster
-val_csv: data/splits/sample_train.csv
+data:
+  root_dir: data/images
+  image_size: 224
+  num_workers: 0
+
+model:
+  name: efficientnet_b0
+  pretrained: true
+
+training:
+  epochs: 10
+  batch_size: 32
+  learning_rate: 0.0001
+  weight_decay: 0.00001
+  early_stopping_patience: 3
+
+evaluation:
+  batch_size: 32
+  threshold: 0.5
+  checkpoint_path: models/image/best_model.pth
+
+paths:
+  model_dir: models/image
+  prediction_dir: outputs/predictions
+  visualization_dir: outputs/visualizations
+
+logging:
+  file: outputs/logs/image_training.log

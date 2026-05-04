@@ -29,7 +29,7 @@ Thumbs.db
 # PyTorch models
 *.pt
 *.pth
-models/
+/models/
 checkpoints/
 
 # Data (IMPORTANT: avoid pushing large datasets)

@@ -12,6 +12,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.append(str(PROJECT_ROOT))
 
+from src.data.preprocessing import preprocess_image_array, tensor_to_batch
 from src.explainability.gradcam import GradCAM, overlay_heatmap, preprocess_image as gradcam_preprocess
 from src.models.image_model import DeepfakeImageModel
 from src.training.train_image import get_config
@@ -20,8 +21,6 @@ from src.training.train_image import get_config
 MODEL_DIR = PROJECT_ROOT / "models" / "image"
 OUTPUT_DIR = PROJECT_ROOT / "outputs" / "visualizations"
 IMAGE_SIZE = (224, 224)
-IMAGENET_MEAN = np.array([0.485, 0.456, 0.406], dtype=np.float32)
-IMAGENET_STD = np.array([0.229, 0.224, 0.225], dtype=np.float32)
 
 _MODEL: Optional[DeepfakeImageModel] = None
 _DEVICE: Optional[torch.device] = None
@@ -56,14 +55,10 @@ def load_model() -> Tuple[DeepfakeImageModel, torch.device]:
 
 
 def preprocess_image(image: np.ndarray) -> torch.Tensor:
-    """Resize, ImageNet-normalize, convert to tensor, and add batch dimension."""
+    """Use the shared image preprocessing path and add batch dimension."""
     _, device = load_model()
-    image = _ensure_rgb(image)
-    image = cv2.resize(image, IMAGE_SIZE, interpolation=cv2.INTER_AREA)
-    image = image.astype(np.float32) / 255.0
-    image = (image - IMAGENET_MEAN) / IMAGENET_STD
-    tensor = torch.from_numpy(image.transpose(2, 0, 1)).float().unsqueeze(0)
-    return tensor.to(device)
+    tensor = preprocess_image_array(image, image_size=IMAGE_SIZE[0], input_format="bgr")
+    return tensor_to_batch(tensor, device)
 
 
 @torch.no_grad()
@@ -123,7 +118,9 @@ def _find_model_checkpoint(model_dir: Path) -> Path:
         raise FileNotFoundError(f"Model directory not found: {model_dir}")
 
     preferred_names = [
+        "best_model.pth",
         "best_image_model.pth",
+        "last_model.pth",
         "last_image_checkpoint.pth",
         "model.pth",
         "checkpoint.pth",
