@@ -1,9 +1,14 @@
-batch_size: 32
-epochs: 10
+# batch_size: 32
+# epochs: 10
 learning_rate: 0.0001
-image_size: 224
+# image_size: 224
 model_name: efficientnet_b0
-train_csv: path
-val_csv: path
+train_csv: ./data/raw/FaceForensics++_C23/csv/train.csv
+# val_csv: path
 test_csv: path
 device: cuda
+
+epochs: 2
+batch_size: 8
+image_size: 128   # faster
+val_csv: data/splits/sample_train.csv
