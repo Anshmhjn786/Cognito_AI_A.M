@@ -1,0 +1,5 @@
+frame_sample_rate: 5   # take 1 frame every 5 frames
+max_frames: 30         # limit per video (VERY IMPORTANT)
+image_size: 224
+batch_size: 8
+device: cuda

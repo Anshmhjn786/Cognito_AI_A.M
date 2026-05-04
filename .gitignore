@@ -35,7 +35,7 @@ checkpoints/
 # Data (IMPORTANT: avoid pushing large datasets)
 data/raw/
 data/processed/
-data/splits/*.csv
+data/splits/
 
 # Outputs
 outputs/predictions/
