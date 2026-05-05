@@ -9,6 +9,7 @@ data:
 model:
   name: efficientnet_b0
   pretrained: true
+  path: models/image/best_model.pth
 
 training:
   epochs: 10
