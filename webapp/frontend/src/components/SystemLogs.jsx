@@ -1,161 +1,185 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, Database, Cpu, Activity, Clock, Server } from 'lucide-react';
+import { Terminal, Shield, AlertCircle, Search, Download, ChevronRight } from 'lucide-react';
 
 const SystemLogs = () => {
-  const [logs, setLogs] = useState([
-    { id: 1, type: 'INFO', msg: 'Neural Detection Engine v4.2.0 initialized', time: '14:30:05' },
-    { id: 2, type: 'INFO', msg: 'Core weights loaded into GPU VRAM (8.2GB)', time: '14:30:08' },
-    { id: 3, type: 'INFO', msg: 'System integrity check: OPTIMAL', time: '14:30:12' },
-    { id: 4, type: 'WARNING', msg: 'Minor latency detected in Delhi node (142ms)', time: '14:31:45' },
-    { id: 5, type: 'INFO', msg: 'Auto-scaling inference workers to 4 instances', time: '14:32:01' },
-  ]);
+  const [logs, setLogs] = useState([]);
+  const [filter, setFilter] = useState('ALL');
+  const scrollRef = useRef(null);
 
-  const logEndRef = useRef(null);
-
-  const logMessages = [
-    { type: 'INFO', msg: 'New image scan initiated from session 4A91' },
-    { type: 'INFO', msg: 'Extracting high-frequency spectral features...' },
-    { type: 'WARNING', msg: 'Blur artifact detected in ROI [241, 582]' },
-    { type: 'INFO', msg: 'GradCAM visualization computed successfully' },
-    { type: 'ALERT', msg: 'Anomalous facial structure detected: 94.2% match' },
-    { type: 'INFO', msg: 'Logging forensic report to vault...' },
-    { type: 'INFO', msg: 'Garbage collection complete: 142MB released' },
-    { type: 'INFO', msg: 'Real-time video feed synchronized with Tokyo node' },
-    { type: 'ALERT', msg: 'Potential adversarial noise detected in channel B' },
-  ];
+  const logTypes = ['INFO', 'WARN', 'ALERT', 'CRITICAL'];
+  const systems = ['AUTH_GATEWAY', 'NEURAL_ENGINE', 'IMAGE_PROC', 'VIDEO_STREAM', 'DB_ACCESS'];
 
   useEffect(() => {
+    // Generate initial logs
+    const initialLogs = Array.from({ length: 20 }).map(() => generateLog());
+    setLogs(initialLogs);
+
+    // Stream logs
     const interval = setInterval(() => {
-      const randomLog = logMessages[Math.floor(Math.random() * logMessages.length)];
-      setLogs(prev => [...prev, {
-        id: Date.now(),
-        type: randomLog.type,
-        msg: randomLog.msg,
-        time: new Date().toLocaleTimeString().split(' ')[0]
-      }].slice(-20)); // Keep last 20 logs
-    }, 3000);
+      setLogs(prev => [...prev.slice(-49), generateLog()]);
+    }, 2000);
 
     return () => clearInterval(interval);
   }, []);
 
   useEffect(() => {
-    logEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [logs]);
 
+  const generateLog = () => {
+    const type = logTypes[Math.floor(Math.random() * logTypes.length)];
+    const system = systems[Math.floor(Math.random() * systems.length)];
+    const id = Math.random().toString(36).substr(2, 9).toUpperCase();
+    return {
+      id,
+      timestamp: new Date().toLocaleTimeString(),
+      type,
+      system,
+      message: getMessage(type, system),
+    };
+  };
+
+  const getMessage = (type, system) => {
+    const messages = {
+      INFO: [`Session initialized on ${system}`, `Cache cleared`, `Handshake successful`],
+      WARN: [`High latency detected in ${system}`, `Resource spike`, `Retry attempt 1`],
+      ALERT: [`Unauthorized access attempt blocked`, `Signature mismatch`, `Pattern anomaly`],
+      CRITICAL: [`Kernel panic prevented`, `Neural sync failure`, `Database breach attempt blocked`],
+    };
+    return messages[type][Math.floor(Math.random() * messages[type].length)];
+  };
+
+  const filteredLogs = filter === 'ALL' ? logs : logs.filter(l => l.type === filter);
+
   return (
-    <div className="flex flex-col w-full h-full text-white font-inter p-6 pr-12 gap-6 relative overflow-hidden">
+    <div className="relative w-full h-screen overflow-hidden bg-black">
       
-      {/* HEADER */}
-      <div className="flex justify-between items-center w-full pb-4 border-b border-white/5 tracking-[0.2em] uppercase text-[10px] font-mono">
-        <div className="flex items-center gap-3">
-          <Terminal className="w-4 h-4 text-primary" />
-          <span className="text-primary/90">SYSTEM LOGS &middot; AI ENGINE ACTIVITY</span>
-        </div>
-        <div className="flex items-center gap-6 text-gray-500">
-          <span>RUNNING TIME: 42:15:08</span>
-          <span className="text-white/60">KERNEL: v4.11-STABLE</span>
-        </div>
-      </div>
-
-      <div className="flex w-full flex-1 gap-8 relative">
+      <div className="absolute inset-0 z-10 flex flex-col w-full h-full text-white font-inter p-6 pr-12 gap-6">
         
-        {/* LEFT: Terminal Logs */}
-        <div className="flex-[3] flex flex-col border border-white/5 bg-black/60 backdrop-blur-md rounded-xl overflow-hidden relative shadow-2xl">
-          {/* Terminal Header */}
-          <div className="bg-white/5 px-4 py-2 flex items-center justify-between border-b border-white/5">
-            <div className="flex gap-1.5">
-              <div className="w-2 h-2 rounded-full bg-red-500/50" />
-              <div className="w-2 h-2 rounded-full bg-yellow-500/50" />
-              <div className="w-2 h-2 rounded-full bg-green-500/50" />
-            </div>
-            <div className="text-[8px] font-mono text-white/30 tracking-widest uppercase">
-              root@cognito-ai:~# tail -f /var/log/inference.log
-            </div>
+        {/* HEADER */}
+        <div className="flex justify-between items-center w-full pb-4 border-b border-white/5 tracking-[0.2em] uppercase text-[10px] font-mono">
+          <div className="flex items-center gap-3">
+            <Terminal className="w-4 h-4 text-primary" />
+            <span className="text-primary/90">SYSTEM_LOGS &middot; KERNEL_STREAM</span>
           </div>
-
-          {/* Log List */}
-          <div className="flex-1 overflow-y-auto p-6 font-mono text-[10px] flex flex-col gap-2 scrollbar-hide">
-            <AnimatePresence initial={false}>
-              {logs.map((log) => (
-                <motion.div
-                  key={log.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex gap-4 items-start"
-                >
-                  <span className="text-white/20 shrink-0">[{log.time}]</span>
-                  <span className={`shrink-0 font-bold ${
-                    log.type === 'INFO' ? 'text-cyan-400' :
-                    log.type === 'WARNING' ? 'text-yellow-400' :
-                    'text-red-400'
-                  }`}>
-                    {log.type}
-                  </span>
-                  <span className="text-white/70">{log.msg}</span>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-            <div ref={logEndRef} />
+          <div className="flex items-center gap-6 text-gray-500">
+            <span>UPTIME / 14:22:09</span>
+            <span className="text-white/60">SYNCED_WITH_CORE</span>
           </div>
-
-          {/* Scanline Effect */}
-          <div className="absolute inset-0 pointer-events-none bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_2px,3px_100%] opacity-20" />
         </div>
 
-        {/* RIGHT: Timeline & Stats */}
-        <div className="w-96 flex flex-col gap-6">
+        <div className="flex w-full flex-1 gap-8 relative overflow-hidden">
           
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: 'CPU LOAD', val: '42%', icon: Cpu },
-              { label: 'GPU VRAM', val: '68%', icon: Database },
-              { label: 'QUERIES', val: '128', icon: Activity },
-              { label: 'MODELS', val: '2', icon: Server }
-            ].map((stat) => (
-              <div key={stat.label} className="p-4 border border-white/5 bg-black/40 backdrop-blur-md rounded-xl flex flex-col gap-2">
-                <stat.icon className="w-3 h-3 text-primary/40" />
-                <div className="text-lg font-orbitron font-bold text-white/90">{stat.val}</div>
-                <div className="text-[7px] font-mono text-primary/30 uppercase tracking-[0.2em]">{stat.label}</div>
+          {/* Main Log Area */}
+          <div className="flex-1 flex flex-col border border-white/5 bg-black/40 backdrop-blur-md rounded-xl overflow-hidden">
+            
+            {/* Log Controls */}
+            <div className="p-4 border-b border-white/5 flex items-center justify-between bg-white/5">
+              <div className="flex gap-2">
+                {['ALL', ...logTypes].map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setFilter(t)}
+                    className={`px-3 py-1 rounded text-[8px] font-mono border transition-all ${
+                      filter === t 
+                        ? 'bg-primary/20 border-primary text-primary shadow-[0_0_10px_rgba(0,245,255,0.2)]' 
+                        : 'border-white/10 text-gray-500 hover:border-white/20'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
               </div>
-            ))}
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <Search className="w-3 h-3 absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                  <input 
+                    type="text" 
+                    placeholder="Search logs..." 
+                    className="bg-black/40 border border-white/10 rounded px-8 py-1 text-[9px] font-mono focus:outline-none focus:border-primary/40 w-48"
+                  />
+                </div>
+                <button className="p-1.5 border border-white/10 rounded hover:bg-white/5 transition-colors">
+                  <Download className="w-3 h-3 text-gray-400" />
+                </button>
+              </div>
+            </div>
+
+            {/* Log Stream */}
+            <div 
+              ref={scrollRef}
+              className="flex-1 overflow-y-auto p-4 font-mono text-[10px] space-y-1.5 scrollbar-thin scrollbar-thumb-primary/10"
+            >
+              <AnimatePresence initial={false}>
+                {filteredLogs.map((log) => (
+                  <motion.div
+                    key={log.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex gap-4 group hover:bg-white/5 py-0.5 transition-colors"
+                  >
+                    <span className="text-gray-600 shrink-0">[{log.timestamp}]</span>
+                    <span className={`shrink-0 w-16 ${
+                      log.type === 'CRITICAL' ? 'text-red-500' :
+                      log.type === 'ALERT' ? 'text-orange-500' :
+                      log.type === 'WARN' ? 'text-yellow-500' :
+                      'text-primary'
+                    }`}>[{log.type}]</span>
+                    <span className="text-gray-400 shrink-0 w-24">[{log.system}]</span>
+                    <span className="text-white/80">{log.message}</span>
+                    <span className="ml-auto text-gray-700 opacity-0 group-hover:opacity-100 transition-opacity">ID_{log.id}</span>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </div>
+
+            {/* Status Bar */}
+            <div className="p-2 border-t border-white/5 bg-black/40 flex items-center justify-between px-4">
+              <div className="flex items-center gap-4 text-[8px] font-mono text-gray-500">
+                <span className="flex items-center gap-1.5"><div className="w-1 h-1 rounded-full bg-primary animate-pulse"/> SYSTEM_OK</span>
+                <span>PACKET_IN: 142kb/s</span>
+                <span>DROPPED: 0</span>
+              </div>
+              <div className="text-[8px] font-mono text-primary/40">SECURE_CHANNEL_AES256</div>
+            </div>
           </div>
 
-          {/* Session Timeline */}
-          <div className="flex-1 border border-white/5 bg-black/40 backdrop-blur-md rounded-xl p-5 flex flex-col">
-            <h3 className="text-[10px] font-mono text-primary/70 uppercase tracking-widest mb-6 flex items-center gap-2">
-              <Clock className="w-3 h-3" /> Event Timeline
-            </h3>
-            <div className="flex flex-col gap-6 relative flex-1">
-              {/* Vertical line */}
-              <div className="absolute left-[5px] top-1 bottom-1 w-[1px] bg-white/10" />
-              
-              {[
-                { time: '14:32:01', event: 'Image Uploaded', status: 'COMPLETED' },
-                { time: '14:32:03', event: 'Landmark Mapping', status: 'COMPLETED' },
-                { time: '14:32:05', event: 'Explainability GEN', status: 'COMPLETED' },
-                { time: '14:32:06', event: 'Final Inference', status: 'DONE' },
-                { time: '14:35:12', event: 'Buffer Flush', status: 'WAITING' },
-              ].map((item, i) => (
-                <div key={i} className="flex gap-4 relative">
-                  <div className={`w-2.5 h-2.5 rounded-full border border-black z-10 shrink-0 mt-1 ${item.status === 'WAITING' ? 'bg-white/10' : 'bg-primary'}`} />
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[10px] font-mono text-white/80">{item.event}</span>
-                    <div className="flex justify-between w-48 text-[7px] font-mono uppercase tracking-widest">
-                      <span className="text-white/20">{item.time}</span>
-                      <span className={item.status === 'DONE' ? 'text-primary' : 'text-white/40'}>{item.status}</span>
+          {/* Sidebar Info */}
+          <div className="w-72 flex flex-col gap-6">
+            <div className="border border-white/5 bg-black/40 backdrop-blur-md rounded-xl p-5">
+              <h3 className="text-[9px] font-mono text-primary/70 uppercase tracking-widest mb-4">Security Overview</h3>
+              <div className="space-y-4">
+                {[
+                  { label: 'Neural Integrity', val: 99.4, status: 'STABLE' },
+                  { label: 'Firewall Strength', val: 100, status: 'MAX' },
+                  { label: 'Latency', val: 12, status: 'OPTIMAL' },
+                ].map((stat) => (
+                  <div key={stat.label} className="flex flex-col gap-1.5">
+                    <div className="flex justify-between text-[8px] font-mono">
+                      <span className="text-white/40">{stat.label}</span>
+                      <span className="text-primary">{stat.status}</span>
+                    </div>
+                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden">
+                      <div className="h-full bg-primary/40" style={{ width: `${stat.val}%` }} />
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </div>
+
+            <div className="flex-1 border border-primary/5 bg-primary/5 rounded-xl p-5 flex flex-col items-center justify-center text-center">
+              <Shield className="w-12 h-12 text-primary opacity-20 mb-4" strokeWidth={1} />
+              <div className="text-[10px] font-mono text-primary/60 uppercase tracking-[0.2em] mb-2">Encrypted session</div>
+              <p className="text-[8px] text-gray-500 font-mono">All logs are signed and verified via the Cognito decentralized ledger.</p>
             </div>
           </div>
 
         </div>
 
       </div>
-
     </div>
   );
 };
