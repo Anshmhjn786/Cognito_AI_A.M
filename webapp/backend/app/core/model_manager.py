@@ -2,7 +2,7 @@ import torch
 from pathlib import Path
 from typing import Dict, Any, Optional
 import yaml
-from app.core.config import IMAGE_MODEL_CONFIG, VIDEO_MODEL_CONFIG, logger
+from app.core.config import IMAGE_MODEL_CONFIG, VIDEO_MODEL_CONFIG, IMAGE_MODEL_PATH, VIDEO_MODEL_PATH, logger
 
 # We need to import the loaders from src
 import sys
@@ -25,21 +25,42 @@ class ModelManager:
         if "image" not in cls._instances:
             logger.info("Loading Image Model...")
             config = load_config(str(IMAGE_MODEL_CONFIG))
-            model_path = get_config_value(config, "paths.model_path", "models/image/best_model.pth")
             model_name = get_config_value(config, "model.name", "efficientnet_b0")
             device = "cuda" if torch.cuda.is_available() else "cpu"
             
-            # Resolve relative model path
-            abs_model_path = PROJECT_ROOT / model_path
-            if not abs_model_path.exists():
-                logger.warning(f"Model file not found at {abs_model_path}, using pretrained backbone.")
-                abs_model_path = None
+            # Use absolute path and check existence
+            if not os.path.exists(IMAGE_MODEL_PATH):
+                logger.error(f"CRITICAL: Image Model not found at {IMAGE_MODEL_PATH}")
+                raise FileNotFoundError(f"Image Model file missing: {IMAGE_MODEL_PATH}")
             
-            cls._instances["image"] = load_image_model(
-                checkpoint_path=abs_model_path,
+            # 1. Initialize model without weights first
+            model = load_image_model(
+                checkpoint_path=None, # Don't load weights yet to avoid crash
                 device=device,
                 model_name=model_name
             )
+
+            # 2. Manually load and remap weights
+            logger.info(f"Remapping and loading weights from {IMAGE_MODEL_PATH}...")
+            state_dict = torch.load(IMAGE_MODEL_PATH, map_location=device)
+            # Handle cases where checkpoint is a dict or just state_dict
+            state_dict = state_dict.get("model_state_dict", state_dict)
+            
+            new_state_dict = {}
+            for key, value in state_dict.items():
+                if key.startswith("features"):
+                    new_key = "backbone." + key
+                elif key.startswith("classifier"):
+                    new_key = "backbone." + key
+                else:
+                    new_key = key
+                new_state_dict[new_key] = value
+
+            # 3. Load remapped weights safely
+            model.load_state_dict(new_state_dict, strict=False)
+            logger.info("Model weights remapped and loaded successfully")
+            
+            cls._instances["image"] = model
             cls._instances["image_config"] = config
             cls._instances["image_device"] = device
         return cls._instances["image"], cls._instances["image_config"], cls._instances["image_device"]
@@ -49,19 +70,37 @@ class ModelManager:
         if "video" not in cls._instances:
             logger.info("Loading Video Model...")
             config = load_config(str(VIDEO_MODEL_CONFIG))
-            model_path = get_config_value(config, "paths.model_path", "models/video/best_model.pth")
             device = "cuda" if torch.cuda.is_available() else "cpu"
             
-            # Resolve relative model path
-            abs_model_path = PROJECT_ROOT / model_path
-            if not abs_model_path.exists():
-                logger.warning(f"Model file not found at {abs_model_path}, using default architecture.")
-                abs_model_path = None
+            # Use absolute path and check existence
+            if not os.path.exists(VIDEO_MODEL_PATH):
+                logger.error(f"CRITICAL: Video Model not found at {VIDEO_MODEL_PATH}")
+                raise FileNotFoundError(f"Video Model file missing: {VIDEO_MODEL_PATH}")
 
-            cls._instances["video"] = load_video_model(
-                checkpoint_path=abs_model_path,
+            # 1. Initialize model without weights first
+            model = load_video_model(
+                checkpoint_path=None, # Don't load weights yet to avoid crash
                 device=device
             )
+
+            # 2. Manually load and filter weights
+            logger.info(f"Loading and filtering video weights from {VIDEO_MODEL_PATH}...")
+            state_dict = torch.load(VIDEO_MODEL_PATH, map_location=device)
+            # Handle cases where checkpoint is a dict or just state_dict
+            state_dict = state_dict.get("model_state_dict", state_dict)
+            
+            filtered_state_dict = {}
+            for key, value in state_dict.items():
+                # SKIP incompatible classifier weights
+                if key.startswith("classifier"):
+                    continue
+                filtered_state_dict[key] = value
+
+            # 3. Load filtered weights safely (backbone only)
+            model.load_state_dict(filtered_state_dict, strict=False)
+            logger.info("Video model backbone loaded, classifier initialized randomly")
+            
+            cls._instances["video"] = model
             cls._instances["video_config"] = config
             cls._instances["video_device"] = device
         return cls._instances["video"], cls._instances["video_config"], cls._instances["video_device"]

@@ -7,23 +7,32 @@ from typing import Any, Dict
 
 class ResponseFormatter:
     @staticmethod
-    def ndarray_to_base64(array: np.ndarray, quality: int = 80) -> str:
+    def ndarray_to_base64(array: np.ndarray) -> str:
         """
-        Converts a numpy array (image) to a compressed base64 string.
+        Converts a numpy array (image) to a base64 PNG string.
         """
         try:
-            # Convert to PIL Image
+            if array is None:
+                raise ValueError("Array is None")
+                
+            # Handle float arrays (0-1 range)
             if array.dtype != np.uint8:
                 array = (array * 255).astype(np.uint8)
             
-            img = Image.fromarray(array)
+            # Ensure array is in a format PIL likes (H, W, C)
+            if len(array.shape) == 2: # Grayscale
+                img = Image.fromarray(array, mode='L')
+            else: # Color
+                img = Image.fromarray(array)
+                
             buffered = io.BytesIO()
-            # Compress as JPEG
-            img.save(buffered, format="JPEG", quality=quality)
+            img.save(buffered, format="PNG")
             img_str = base64.b64encode(buffered.getvalue()).decode("utf-8")
-            return f"data:image/jpeg;base64,{img_str}"
+            return f"data:image/png;base64,{img_str}"
         except Exception as e:
-            return ""
+            from app.core.config import logger
+            logger.error(f"Base64 conversion failed: {e}")
+            raise e
 
     @staticmethod
     def format_error(message: str, details: Any = None) -> Dict[str, Any]:

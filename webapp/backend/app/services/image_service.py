@@ -39,32 +39,50 @@ class ImageService:
             # 4. Explainability
             explainability_data = {}
             
-            # Grad-CAM
+            # Grad-CAM and Heatmap
             try:
                 grad_cam = GradCAM(model)
                 # Need to enable gradients for Grad-CAM
                 input_tensor.requires_grad = True
-                heatmap = grad_cam.generate(input_tensor)
+                cam_heatmap = grad_cam.generate(input_tensor)
                 grad_cam.remove_hooks()
                 
                 # Apply heatmap to original image (resized)
                 image_resized = cv2.resize(image_np, (image_size, image_size))
-                overlay = apply_heatmap(image_resized, heatmap)
+                overlay = apply_heatmap(image_resized, cam_heatmap)
                 
                 explainability_data["gradcam"] = ResponseFormatter.ndarray_to_base64(overlay)
-                explainability_data["heatmap"] = ResponseFormatter.ndarray_to_base64(heatmap)
+                explainability_data["heatmap"] = ResponseFormatter.ndarray_to_base64(cam_heatmap)
+                
+                assert explainability_data["gradcam"] is not None
+                assert explainability_data["heatmap"] is not None
+                logger.info("GradCAM and Heatmap generated successfully")
             except Exception as e:
-                logger.error(f"Grad-CAM failed: {e}")
+                logger.error(f"Explainability (Grad-CAM/Heatmap) failed: {e}")
+                raise e
 
             # Frequency Analysis
             try:
-                freq_results = analyze_frequency_artifacts(image_np)
-                # We can't easily visualize this as an image in the same way, 
-                # but we can return the magnitude spectrum if we want.
-                # For now, let's just use the placeholder requirement
-                explainability_data["frequency_map"] = "" # Placeholder or actual logic if needed
+                if image_np.ndim == 3:
+                    gray = cv2.cvtColor(image_np, cv2.COLOR_RGB2GRAY)
+                else:
+                    gray = image_np
+
+                # Compute FFT for visualization
+                f = np.fft.fft2(gray)
+                fshift = np.fft.fftshift(f)
+                magnitude_spectrum = 20 * np.log(np.abs(fshift) + 1e-8)
+                
+                # Normalize for display
+                mag_norm = cv2.normalize(magnitude_spectrum, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
+                explainability_data["frequency_map"] = ResponseFormatter.ndarray_to_base64(mag_norm)
+                
+                # Still call src function for stats/consistency
+                freq_stats = analyze_frequency_artifacts(image_np)
+                logger.info(f"Frequency analysis generated successfully: {freq_stats}")
             except Exception as e:
                 logger.error(f"Frequency analysis failed: {e}")
+                raise e
 
             return ResponseFormatter.format_prediction(
                 prediction=prediction,
