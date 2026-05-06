@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, ScanFace, MonitorPlay, Network, Terminal } from 'lucide-react';
+import { Activity, ScanFace, MonitorPlay, Camera, BookOpen } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLocation, Link } from 'react-router-dom';
 
@@ -87,8 +87,8 @@ const Sidebar = () => {
         <SidebarItem icon={Activity} label="System Core" path="/" active={currentPath === '/'} />
         <SidebarItem icon={ScanFace} label="Image Analysis" path="/image" active={currentPath === '/image'} />
         <SidebarItem icon={MonitorPlay} label="Video Feed" path="/video" active={currentPath === '/video'} />
-        <SidebarItem icon={Network} label="Intel Network" path="/intel-network" active={currentPath === '/intel-network'} />
-        <SidebarItem icon={Terminal} label="System Log" path="/system-logs" active={currentPath === '/system-logs'} />
+        <SidebarItem icon={Camera} label="Realtime Analysis" path="/realtime" active={currentPath === '/realtime'} />
+        <SidebarItem icon={BookOpen} label="Research Insights" path="/research" active={currentPath === '/research'} />
       </div>
 
       <div className="mt-auto">

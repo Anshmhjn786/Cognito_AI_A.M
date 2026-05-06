@@ -6,8 +6,8 @@ import ImageDetection from './components/ImageDetection';
 import VideoDetection from './components/VideoDetection';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import IntelNetwork from './components/IntelNetwork';
-import SystemLogs from './components/SystemLogs';
+import RealtimeDetection from './components/RealtimeDetection';
+import ResearchPage from './components/ResearchPage';
 
 function App() {
   const location = useLocation();
@@ -40,8 +40,8 @@ function App() {
             <Route path="/" element={<HeroSection />} />
             <Route path="/image" element={<ImageDetection />} />
             <Route path="/video" element={<VideoDetection />} />
-            <Route path="/intel-network" element={<IntelNetwork />} />
-            <Route path="/system-logs" element={<SystemLogs />} />
+            <Route path="/realtime" element={<RealtimeDetection />} />
+            <Route path="/research" element={<ResearchPage />} />
           </Routes>
         </AnimatePresence>
       </main>
