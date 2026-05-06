@@ -79,12 +79,13 @@ const VideoDetection = () => {
       const data = await res.json();
       
       if (data.status === 'success') {
-        setFrames(data.frames || []);
-        setFlaggedFrames(data.flagged_frames || []);
+        // NORMALIZE DATA (Fix 1 & 2)
+        const normalizedFrames = (data.frames || []).map(f => resolveMediaUrl(f));
+        const normalizedFlags = (data.flagged_frames || []).map(Number);
+        
+        setFrames(normalizedFrames);
+        setFlaggedFrames(normalizedFlags);
         setResult(data);
-
-        // Add to history once the review cycle finishes (triggered in useEffect)
-        // But we prepare the item here
       } else {
         setPhase("idle");
         alert("Analysis failed: " + (data.message || "Unknown error"));
@@ -104,10 +105,6 @@ const VideoDetection = () => {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setHistory(prev => [historyItem, ...prev].slice(0, 12));
-
-      setTimeout(() => {
-        historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 1000);
     }
   }, [phase, result]);
 
@@ -185,9 +182,9 @@ const VideoDetection = () => {
                       <div className="w-full h-full flex flex-col items-center justify-center relative">
                         <motion.img 
                           key={activeIndex}
-                          initial={{ opacity: 0.8 }}
-                          animate={{ opacity: 1 }}
-                          transition={{ duration: 0.2 }}
+                          initial={{ opacity: 0.6, scale: 0.98 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
                           src={resolveMediaUrl(frames[activeIndex])} 
                           alt="Processing Frame" 
                           className="max-w-full max-h-full object-contain rounded-lg shadow-2xl border border-white/10"
@@ -196,16 +193,27 @@ const VideoDetection = () => {
                             e.target.alt = "Frame failed to load";
                           }}
                         />
-                        {flaggedFrames.includes(activeIndex) && (
-                          <div className="absolute top-4 right-4 px-4 py-2 bg-red-500/20 backdrop-blur-md border border-red-500/40 rounded text-[10px] font-orbitron text-red-500 tracking-widest uppercase">
+                        
+                        {/* Flagged Frames Indicator */}
+                        {flaggedFrames.includes(Number(activeIndex)) && (
+                          <motion.div 
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            className="absolute top-4 right-4 px-4 py-2 bg-red-500/20 backdrop-blur-md border border-red-500/40 rounded text-[10px] font-orbitron text-red-500 tracking-widest uppercase z-20"
+                          >
                             Anomaly Detected
-                          </div>
+                          </motion.div>
                         )}
+
+                        {/* Frame Counter Overlay */}
+                        <div className="absolute bottom-4 right-4 text-[9px] font-mono text-white/20 uppercase tracking-[0.3em] bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/5">
+                          Frame_{activeIndex + 1} / {frames.length}
+                        </div>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-4 text-primary/40">
                         <Activity className="w-12 h-12 animate-pulse" />
-                        <span className="text-[10px] font-mono uppercase tracking-[0.4em]">Initializing Frame Extraction...</span>
+                        <span className="text-[10px] font-mono uppercase tracking-[0.4em]">Fetching_Frame_Sequence...</span>
                       </div>
                     )}
                   </motion.div>
