@@ -83,22 +83,25 @@ class ModelManager:
                 device=device
             )
 
-            # 2. Manually load and filter weights
-            logger.info(f"Loading and filtering video weights from {VIDEO_MODEL_PATH}...")
+            # 2. Manually load weights with debugging
+            logger.info(f"Loading video weights from {VIDEO_MODEL_PATH}...")
             state_dict = torch.load(VIDEO_MODEL_PATH, map_location=device)
             # Handle cases where checkpoint is a dict or just state_dict
             state_dict = state_dict.get("model_state_dict", state_dict)
             
-            filtered_state_dict = {}
-            for key, value in state_dict.items():
-                # SKIP incompatible classifier weights
-                if key.startswith("classifier"):
-                    continue
-                filtered_state_dict[key] = value
-
-            # 3. Load filtered weights safely (backbone only)
-            model.load_state_dict(filtered_state_dict, strict=False)
-            logger.info("Video model backbone loaded, classifier initialized randomly")
+            # 3. Load weights with strict=False to trace mismatches
+            missing, unexpected = model.load_state_dict(state_dict, strict=False)
+            
+            logger.info("=== VIDEO MODEL LOAD DEBUG ===")
+            logger.info(f"Missing keys: {len(missing)}")
+            if missing: logger.info(f"First 5 missing: {missing[:5]}")
+            logger.info(f"Unexpected keys: {len(unexpected)}")
+            if unexpected: logger.info(f"First 5 unexpected: {unexpected[:5]}")
+            
+            if not missing and not unexpected:
+                logger.info("Video model weights loaded perfectly (Strict Match)")
+            else:
+                logger.info("Video model loaded with partial weights (Check debug logs)")
             
             cls._instances["video"] = model
             cls._instances["video_config"] = config

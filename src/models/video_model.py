@@ -28,8 +28,13 @@ class DeepfakeVideoModel(nn.Module):
             batch_first=True
         )
         
-        # Final Classifier
-        self.classifier = nn.Linear(hidden_dim, 1)
+        # Final Classifier (Aligned with Training Notebook)
+        self.classifier = nn.Sequential(
+            nn.Linear(hidden_dim, 64),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            nn.Linear(64, 1)
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
@@ -43,12 +48,12 @@ class DeepfakeVideoModel(nn.Module):
         features = features.view(batch_size, seq_len, -1)  # [batch, frames, feature_dim]
         
         # LSTM
-        lstm_out, _ = self.lstm(features)  # [batch, frames, hidden_dim]
+        lstm_out, (h_n, c_n) = self.lstm(features)  # [batch, frames, hidden_dim]
         
-        # We take the output of the last frame
-        last_frame_out = lstm_out[:, -1, :]  # [batch, hidden_dim]
+        # Use the last hidden state for classification (Aligned with Training Notebook)
+        last_hidden = h_n[-1]  # [batch, hidden_dim]
         
-        logits = self.classifier(last_frame_out)  # [batch, 1]
+        logits = self.classifier(last_hidden)  # [batch, 1]
         return logits
 
 

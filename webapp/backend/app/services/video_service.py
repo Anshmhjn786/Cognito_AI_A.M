@@ -50,23 +50,32 @@ class VideoService:
             cap.release()
 
             # 3. Preprocess for Model Inference
-            # The model expects a specific frame count (e.g. 20)
-            frame_count = get_config_value(config, "data.frame_count", 20)
-            image_size = get_config_value(config, "data.image_size", 224)
+            # Aligned with training: Exactly 16 frames sampled uniformly
+            frame_count = 16 
+            image_size = 224
+            
+            logger.info(f"=== INFERENCE PIPELINE DEBUG ===")
+            logger.info(f"Target frame count: {frame_count}")
             
             # Use src extraction for inference input
             inference_frames = extract_frames(str(video_path), frame_count=frame_count)
+            logger.info(f"Frames actually extracted: {len(inference_frames)}")
+            
             if not inference_frames:
                 return ResponseFormatter.format_error("Frame extraction failed", "Could not extract frames for inference.")
             
             sequence_tensor = frames_to_tensor(inference_frames, image_size=image_size)
             input_tensor = sequence_tensor.unsqueeze(0).to(device)
+            logger.info(f"Input tensor shape: {input_tensor.shape}")
             
             # 4. Inference
             model.eval()
             with torch.no_grad():
                 logits = model(input_tensor)
+                logger.info(f"Raw model logits: {logits.item() if logits.numel() == 1 else logits}")
+                
                 probability = torch.sigmoid(logits).item()
+                logger.info(f"Sigmoid probability: {probability}")
             
             prediction = "FAKE" if probability > 0.5 else "REAL"
             confidence = probability if prediction == "FAKE" else 1.0 - probability
@@ -77,6 +86,9 @@ class VideoService:
                 # Randomly flag 2-4 indices from the 10 visualization frames
                 num_flags = random.randint(2, 4)
                 flagged_frames = sorted(random.sample(range(len(frame_paths)), num_flags))
+            
+            logger.info(f"Final Prediction: {prediction} ({confidence*100:.2f}%)")
+            logger.info("================================")
             
             return {
                 "status": "success",
