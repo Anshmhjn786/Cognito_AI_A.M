@@ -10,10 +10,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 UPLOAD_DIR = BASE_DIR / "uploads"
 IMAGE_UPLOAD_DIR = UPLOAD_DIR / "images"
 VIDEO_UPLOAD_DIR = UPLOAD_DIR / "videos"
+FRAME_UPLOAD_DIR = UPLOAD_DIR / "frames"
 
 # Create directories if they don't exist
 IMAGE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 VIDEO_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+FRAME_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 # CORS Settings
 ALLOWED_ORIGINS = [
