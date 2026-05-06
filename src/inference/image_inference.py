@@ -1,85 +1,53 @@
-import time
-from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
-
-import numpy as np
 import torch
+from pathlib import Path
+from typing import Dict, Any, Union
+import numpy as np
+from PIL import Image
 
-from src.data.preprocessing import preprocess_image_array, tensor_to_batch
-from src.explainability.gradcam import generate_gradcam
-from src.explainability.heatmap import overlay_heatmap, save_heatmap_overlay
-from src.models.image_model import load_model as base_load_model
-from src.utils.config import get_config_value, load_config
-from src.utils.logger import get_logger
-
-logger = get_logger("image_inference")
-
-# Singleton for lazy model loading
-_MODEL: Optional[torch.nn.Module] = None
-_DEVICE: Optional[torch.device] = None
+from src.models.image_model import load_image_model
+from src.data.preprocessing import preprocess_image
+from src.utils.config import load_config, get_config_value
+from src.utils.helpers import get_device
 
 
-def load_inference_model() -> Tuple[torch.nn.Module, torch.device]:
-    """Lazy-load the image model and keep it in memory."""
-    global _MODEL, _DEVICE
-    if _MODEL is not None:
-        return _MODEL, _DEVICE
-
-    config = load_config("configs/image_config.yaml")
-    checkpoint_path = get_config_value(config, ["model.path", "evaluation.checkpoint_path"], "models/image/best_model.pth")
-    
-    logger.info(f"Loading model from {checkpoint_path}")
-    _DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    _MODEL = base_load_model(checkpoint_path=checkpoint_path, device=_DEVICE)
-    
-    return _MODEL, _DEVICE
-
-
-@torch.no_grad()
-def predict_image_tensor(tensor: torch.Tensor) -> float:
-    """Lightweight prediction for a single image tensor."""
-    model, _ = load_inference_model()
-    logit = model(tensor).view(-1)
-    return torch.sigmoid(logit).item()
-
-
-def image_inference(image: np.ndarray, input_format: str = "rgb") -> Dict[str, Any]:
+def predict_image(
+    image: Union[str, Path, np.ndarray, Image.Image],
+    config_path: str = "configs/image_config.yaml"
+) -> Dict[str, Any]:
     """
-    Standardized image inference with Grad-CAM visualization.
-    Returns:
-        {
-            "label": str,
-            "confidence": float,
-            "heatmap_path": str
-        }
+    Full image inference pipeline.
+    Steps:
+    1. Load trained image model
+    2. Preprocess input image
+    3. Run prediction
+    4. Return structured output (prediction + confidence)
     """
-    model, device = load_inference_model()
-
-    # Preprocessing
-    tensor = preprocess_image_array(image, image_size=224, input_format=input_format)
-    batch = tensor_to_batch(tensor, device)
-
-    # Lightweight prediction
-    fake_prob = predict_image_tensor(batch)
-    label = "fake" if fake_prob > 0.5 else "real"
-    confidence = fake_prob if label == "fake" else 1.0 - fake_prob
-
-    # Generate Grad-CAM for visualization
-    # generate_gradcam expects RGB image for overlay logic
-    heatmap = generate_gradcam(model, image, device=device)
-    overlay = overlay_heatmap(image, heatmap)
-
-    timestamp = int(time.time() * 1000)
-    output_path = f"outputs/visualizations/image_{timestamp}.jpg"
-    heatmap_path = save_heatmap_overlay(overlay, output_path)
-
-    result = {
-        "label": label,
+    config = load_config(config_path)
+    device = get_device(get_config_value(config, "device", "cpu"))
+    
+    # 1. Load model
+    model_path = get_config_value(config, "paths.model_path", "models/image/best_model.pth")
+    model_name = get_config_value(config, "model.name", "efficientnet_b0")
+    model = load_image_model(model_path, device=device, model_name=model_name)
+    
+    # 2. Preprocess image
+    if isinstance(image, (str, Path)):
+        image = Image.open(image).convert("RGB")
+    
+    image_size = get_config_value(config, "data.image_size", 224)
+    input_tensor = preprocess_image(image, image_size=image_size).unsqueeze(0).to(device)
+    
+    # 3. Run prediction
+    with torch.no_grad():
+        logits = model(input_tensor)
+        probability = torch.sigmoid(logits).item()
+    
+    # 4. Return structured output
+    prediction = "FAKE" if probability > 0.5 else "REAL"
+    confidence = probability if prediction == "FAKE" else 1.0 - probability
+    
+    return {
+        "prediction": prediction,
         "confidence": float(confidence),
-        "heatmap_path": heatmap_path,
+        "explainability": None # Optional for now
     }
-
-    logger.debug(f"Image tensor shape: {tuple(batch.shape)}")
-    logger.info(f"Image prediction: {label} ({confidence:.4f})")
-    
-    return result

@@ -1,25 +1,71 @@
 import torch
 import torch.nn as nn
+from torchvision import models
+from pathlib import Path
+from typing import Optional, Union
 
 
 class DeepfakeVideoModel(nn.Module):
     """
     CNN + LSTM model architecture for video-based deepfake detection.
     
-    NOTE: This model is for academic/research use and not currently 
-    used in the production deployment.
+    The CNN (EfficientNet-B0) extracts frame-level features.
+    The LSTM captures temporal inconsistencies across the sequence.
     """
-
-    def __init__(self, sequence_length: int = 20, hidden_dim: int = 256):
+    def __init__(self, feature_dim: int = 1280, hidden_dim: int = 256, num_layers: int = 1):
         super().__init__()
-        # Placeholder for CNN+LSTM architecture
-        # Input shape: (batch, sequence_length, 3, 224, 224)
-        print("[DEBUG][video_model] Initializing CNN+LSTM Research Model")
         
+        # CNN Backbone (Feature Extractor)
+        # We remove the classifier to get raw features
+        cnn = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.DEFAULT)
+        self.feature_extractor = nn.Sequential(*list(cnn.children())[:-1])
+        
+        # LSTM Layer
+        self.lstm = nn.LSTM(
+            input_size=feature_dim, 
+            hidden_size=hidden_dim, 
+            num_layers=num_layers, 
+            batch_first=True
+        )
+        
+        # Final Classifier
+        self.classifier = nn.Linear(hidden_dim, 1)
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """
-        Forward pass for a sequence of frames.
-        Expected input: (B, T, C, H, W)
+        Input x shape: [batch, frames, channels, height, width]
         """
-        # Research placeholder logic
-        return torch.tensor([0.0])
+        batch_size, seq_len, c, h, w = x.shape
+        
+        # Reshape to [batch * frames, channels, height, width] for CNN
+        x = x.view(batch_size * seq_len, c, h, w)
+        features = self.feature_extractor(x)  # [batch * frames, feature_dim, 1, 1]
+        features = features.view(batch_size, seq_len, -1)  # [batch, frames, feature_dim]
+        
+        # LSTM
+        lstm_out, _ = self.lstm(features)  # [batch, frames, hidden_dim]
+        
+        # We take the output of the last frame
+        last_frame_out = lstm_out[:, -1, :]  # [batch, hidden_dim]
+        
+        logits = self.classifier(last_frame_out)  # [batch, 1]
+        return logits
+
+
+def load_video_model(
+    checkpoint_path: Optional[Union[str, Path]] = None,
+    device: str = "cpu"
+) -> DeepfakeVideoModel:
+    """
+    Load the video model with optional pretrained weights.
+    """
+    model = DeepfakeVideoModel()
+    
+    if checkpoint_path:
+        checkpoint = torch.load(checkpoint_path, map_location=device)
+        state_dict = checkpoint.get("model_state_dict", checkpoint)
+        model.load_state_dict(state_dict)
+        
+    model.to(device)
+    model.eval()
+    return model

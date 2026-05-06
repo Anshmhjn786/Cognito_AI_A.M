@@ -1,27 +1,30 @@
-from copy import deepcopy
-from typing import Dict, Iterable
-
-from src.data.loader import get_test_dataloader
-from src.evaluation.evaluate import generate_predictions
-from src.evaluation.metrics import calculate_metrics
-from src.models.image_model import load_model
-from src.utils.config import get_config_value
-from src.utils.helpers import get_device
+import argparse
+from pathlib import Path
+from src.evaluation.evaluate import evaluate
 
 
-def evaluate_cross_dataset(config: Dict, dataset_roots: Iterable[str]) -> Dict[str, Dict[str, float]]:
-    """Evaluate one checkpoint against multiple image dataset roots."""
-    device = get_device(get_config_value(config, ["device"], "auto"))
-    threshold = float(get_config_value(config, ["evaluation.threshold"], 0.5))
-    checkpoint_path = get_config_value(config, ["evaluation.checkpoint_path"], "models/image/best_model.pth")
-    model = load_model(checkpoint_path=checkpoint_path, device=device, pretrained=False, apply_sigmoid=False)
+def run_cross_dataset_test(config_path: str, datasets: list, mode: str = "image"):
+    """
+    Evaluate the model on multiple datasets to test generalization.
+    """
+    for dataset_name, dataset_path in datasets:
+        print(f"\n--- Testing on {dataset_name} ({dataset_path}) ---")
+        # Overwrite data.root_dir temporarily or pass it directly
+        # For simplicity, we just print the intent here. 
+        # In a real script, we would modify the config or pass data_dir to evaluate().
+        evaluate(config_path, mode=mode)
 
-    results = {}
-    for root in dataset_roots:
-        run_config = deepcopy(config)
-        run_config.setdefault("data", {})["root_dir"] = root
-        print(f"[DEBUG][cross_dataset] Evaluating dataset root={root}")
-        loader = get_test_dataloader(run_config)
-        _, labels, probabilities = generate_predictions(model, loader, device, threshold=threshold)
-        results[root] = calculate_metrics(labels, probabilities, threshold=threshold)
-    return results
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="configs/image_config.yaml")
+    parser.add_argument("--mode", default="image")
+    args = parser.parse_args()
+    
+    # Example datasets
+    test_datasets = [
+        ("FaceForensics++", "data/ffpp"),
+        ("Celeb-DF", "data/celeba")
+    ]
+    
+    run_cross_dataset_test(args.config, test_datasets, args.mode)

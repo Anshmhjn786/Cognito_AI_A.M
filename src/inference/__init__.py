@@ -1,5 +1,5 @@
-from .image_inference import image_inference
+from .image_inference import predict_image
+from .video_inference import predict_video
 from .main_inference import main_inference
-from .video_inference import video_inference
 
-__all__ = ["main_inference", "image_inference", "video_inference"]
+__all__ = ["predict_image", "predict_video", "main_inference"]
