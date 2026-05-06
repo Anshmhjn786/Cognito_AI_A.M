@@ -39,12 +39,24 @@ def predict_image(
     import shutil
     from pathlib import Path
     import uuid
+    import cv2
     from app.core.config import IMAGE_UPLOAD_DIR
     
+    # 2. Setup Filenames
+    request_id = str(uuid.uuid4())
     extension = Path(file.filename).suffix
-    unique_filename = f"{uuid.uuid4()}{extension}"
-    file_path = IMAGE_UPLOAD_DIR / unique_filename
+    original_filename = f"original_{request_id}{extension}"
+    heatmap_filename = f"heatmap_{request_id}.png"
+    gradcam_filename = f"gradcam_{request_id}.png"
     
+    file_path = IMAGE_UPLOAD_DIR / original_filename
+    heatmap_path = IMAGE_UPLOAD_DIR / heatmap_filename
+    gradcam_path = IMAGE_UPLOAD_DIR / gradcam_filename
+    
+    # Ensure directory exists
+    IMAGE_UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    
+    # 3. Save Original File
     try:
         with file_path.open("wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
@@ -52,10 +64,31 @@ def predict_image(
         logger.error(f"Failed to save file: {e}")
         raise HTTPException(status_code=500, detail="Could not save uploaded file.")
     
-    # 3. Predict
+    # 4. Run Prediction
     result = ImageService.predict(file_path)
     
-    # 4. Cleanup in background
-    background_tasks.add_task(FileHandler.cleanup_file, file_path)
+    if result.get("status") != "success":
+        raise HTTPException(status_code=500, detail=result.get("message", "Prediction failed"))
+
+    # 5. Save explainability images
+    explainability = result.get("explainability", {})
     
-    return result
+    try:
+        if "heatmap" in explainability:
+            cv2.imwrite(str(heatmap_path), explainability["heatmap"])
+        if "gradcam" in explainability:
+            cv2.imwrite(str(gradcam_path), explainability["gradcam"])
+    except Exception as e:
+        logger.error(f"Failed to save explainability images: {e}")
+
+    # 6. Format Response according to Mandatory Contract
+    response_dict = {
+        "prediction": result["prediction"],
+        "confidence": result["confidence"],
+        "heatmap": f"/uploads/images/{heatmap_filename}",
+        "gradcam": f"/uploads/images/{gradcam_filename}",
+        "saved_image_path": f"/uploads/images/{original_filename}"
+    }
+    
+    print("RETURNING:", response_dict)
+    return response_dict

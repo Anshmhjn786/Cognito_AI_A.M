@@ -51,11 +51,9 @@ class ImageService:
                 image_resized = cv2.resize(image_np, (image_size, image_size))
                 overlay = apply_heatmap(image_resized, cam_heatmap)
                 
-                explainability_data["gradcam"] = ResponseFormatter.ndarray_to_base64(overlay)
-                explainability_data["heatmap"] = ResponseFormatter.ndarray_to_base64(cam_heatmap)
+                explainability_data["gradcam"] = overlay
+                explainability_data["heatmap"] = cam_heatmap
                 
-                assert explainability_data["gradcam"] is not None
-                assert explainability_data["heatmap"] is not None
                 logger.info("GradCAM and Heatmap generated successfully")
             except Exception as e:
                 logger.error(f"Explainability (Grad-CAM/Heatmap) failed: {e}")
@@ -75,7 +73,7 @@ class ImageService:
                 
                 # Normalize for display
                 mag_norm = cv2.normalize(magnitude_spectrum, None, 0, 255, cv2.NORM_MINMAX).astype(np.uint8)
-                explainability_data["frequency_map"] = ResponseFormatter.ndarray_to_base64(mag_norm)
+                explainability_data["frequency_map"] = mag_norm
                 
                 # Still call src function for stats/consistency
                 freq_stats = analyze_frequency_artifacts(image_np)
@@ -84,11 +82,12 @@ class ImageService:
                 logger.error(f"Frequency analysis failed: {e}")
                 raise e
 
-            return ResponseFormatter.format_prediction(
-                prediction=prediction,
-                confidence=confidence,
-                explainability=explainability_data
-            )
+            return {
+                "status": "success",
+                "prediction": prediction,
+                "confidence": confidence,
+                "explainability": explainability_data
+            }
 
         except Exception as e:
             logger.error(f"Image prediction failed: {e}")

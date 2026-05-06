@@ -10,8 +10,9 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from fastapi.staticfiles import StaticFiles
 from app.routes import image, video
-from app.core.config import ALLOWED_ORIGINS, logger
+from app.core.config import ALLOWED_ORIGINS, logger, UPLOAD_DIR
 from app.utils.response_formatter import ResponseFormatter
 
 # Initialize FastAPI
@@ -42,6 +43,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include Routers
 app.include_router(image.router, tags=["Image Detection"])
 app.include_router(video.router, tags=["Video Detection"])
+
+# Serve Uploads as static files
+app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 
 @app.get("/")
 def health_check():
