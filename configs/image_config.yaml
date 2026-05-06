@@ -1,9 +1,0 @@
-batch_size: 32
-epochs: 10
-learning_rate: 0.0001
-image_size: 224
-model_name: efficientnet_b0
-train_csv: path
-val_csv: path
-test_csv: path
-device: cuda
