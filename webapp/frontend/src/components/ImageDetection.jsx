@@ -120,7 +120,7 @@ const ImageDetection = () => {
       
       {/* HEADER */}
       <header className="fixed top-0 left-0 right-0 h-16 border-b border-white/5 bg-black/80 backdrop-blur-md z-50 px-8 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="ml-24 flex items-center gap-3 px-4 py-4">
           <Shield className="w-5 h-5 text-primary" />
           <h1 className="text-sm font-orbitron font-bold tracking-[0.3em]">COGNITO // FORENSIC_LAB</h1>
         </div>
