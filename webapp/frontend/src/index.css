@@ -1,0 +1,63 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== BASE ===== */
+@layer base {
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #020305;
+    color: white;
+    overflow-x: hidden;
+    @apply font-inter;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-orbitron;
+  }
+}
+
+/* ===== COMPONENTS ===== */
+@layer components {
+  .glow-text {
+    -webkit-text-stroke: 1px rgba(0, 245, 255, 0.15);
+    text-shadow: 0 0 4px rgba(0, 245, 255, 0.2),
+      0 0 10px rgba(0, 245, 255, 0.05);
+  }
+
+  .glow-text-strong {
+    -webkit-text-stroke: 1px rgba(0, 245, 255, 0.3);
+    text-shadow: 0 0 6px rgba(0, 245, 255, 0.4),
+      0 0 15px rgba(0, 245, 255, 0.1);
+  }
+
+  .glow-border {
+    box-shadow: 0 0 10px rgba(0, 245, 255, 0.1);
+  }
+
+  .glass-panel {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+  }
+}
+
+/* ✅ THIS WAS MISSING */
+
+/* ===== ANIMATIONS ===== */
+@keyframes scan {
+  from {
+    transform: translateY(-100%);
+  }
+
+  to {
+    transform: translateY(1000%);
+  }
+}
+
+.scan-line {
+  height: 2px;
+  background: linear-gradient(to right, transparent, #00F5FF, transparent);
+  animation: scan 4s linear infinite;
+  opacity: 0.3;
+}
