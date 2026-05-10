@@ -25,7 +25,7 @@ const HeroSection = () => {
 
           <h1 className="text-[7.5rem] font-bold tracking-[0.15em] leading-none mb-6 text-white font-orbitron select-none relative group">
             <span className="relative inline-block">
-              <span className="relative z-10 opacity-90">COGNATO</span>
+              <span className="relative z-10 opacity-90">COGNITO</span>
               {/* Subtle Scanning Shimmer */}
               <motion.div
                 animate={{ left: ['-100%', '200%'] }}

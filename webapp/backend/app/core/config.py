@@ -28,7 +28,7 @@ ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"]
 ALLOWED_VIDEO_TYPES = ["video/mp4", "video/mpeg", "video/quicktime", "video/x-msvideo"]
 
 # Model Paths (Absolute Paths as requested)
-IMAGE_MODEL_PATH = "D:/Projects/Machine_Learning Projects/Cognito_AI_A.M/models/image/best_model.pth"
+IMAGE_MODEL_PATH = "D:/Projects/Machine_Learning Projects/Cognito_AI_A.M/models/image/new_best_model.pth"
 VIDEO_MODEL_PATH = "D:/Projects/Machine_Learning Projects/Cognito_AI_A.M/models/video/best_weights.pth"
 
 # Config Paths

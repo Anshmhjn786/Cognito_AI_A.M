@@ -24,6 +24,9 @@ scikit-image
 tqdm
 pyyaml
 
+# Model Tuning
+optuna
+
 # Backend (API)
 flask
 flask-cors
