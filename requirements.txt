@@ -39,3 +39,7 @@ timm
 # For notebooks (if needed)
 jupyter
 ipykernel
+
+# Hugging Face utils
+huggingface_hub
+datasets
