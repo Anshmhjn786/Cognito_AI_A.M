@@ -61,6 +61,7 @@ yarn-error.log
 # Misc
 *.swp
 *.bak
+webapp/backend/cookies.txt
 
 webapp/backend/uploads/*
 !webapp/backend/uploads/.gitkeep

@@ -8,3 +8,7 @@ numpy
 pillow
 python-dotenv
 pyyaml
+yt-dlp
+instaloader
+ffmpeg-python
+exifread

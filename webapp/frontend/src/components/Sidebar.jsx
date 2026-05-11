@@ -87,7 +87,7 @@ const Sidebar = () => {
         <SidebarItem icon={Activity} label="System Core" path="/" active={currentPath === '/'} />
         <SidebarItem icon={ScanFace} label="Image Analysis" path="/image" active={currentPath === '/image'} />
         <SidebarItem icon={MonitorPlay} label="Video Feed" path="/video" active={currentPath === '/video'} />
-        <SidebarItem icon={Camera} label="Realtime Analysis" path="/realtime" active={currentPath === '/realtime'} />
+        <SidebarItem icon={Camera} label="URL Analysis" path="/url-analysis" active={currentPath === '/url-analysis'} />
         <SidebarItem icon={BookOpen} label="Research Insights" path="/research" active={currentPath === '/research'} />
       </div>
 

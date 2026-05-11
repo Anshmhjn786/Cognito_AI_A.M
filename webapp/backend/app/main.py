@@ -11,7 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from fastapi.staticfiles import StaticFiles
-from app.routes import image, video, realtime
+from app.routes import image, video, analyze
 from app.core.config import ALLOWED_ORIGINS, logger, UPLOAD_DIR
 from app.utils.response_formatter import ResponseFormatter
 
@@ -43,7 +43,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 # Include Routers
 app.include_router(image.router, tags=["Image Detection"])
 app.include_router(video.router, tags=["Video Detection"])
-app.include_router(realtime.router, tags=["Realtime Detection"])
+app.include_router(analyze.router, tags=["Metadata Analysis"])
 
 # Serve Uploads as static files
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
