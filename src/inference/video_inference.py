@@ -26,7 +26,7 @@ def predict_video(
     device = get_device(get_config_value(config, "device", "cpu"))
     
     # 1. Load model
-    model_path = get_config_value(config, "paths.model_path", "models/video/best_model.pth")
+    model_path = get_config_value(config, "paths.model_path", "models/video/best_weights.pth")
     model = load_video_model(model_path, device=device)
     
     # 2. Extract frames
