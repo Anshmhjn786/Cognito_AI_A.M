@@ -1,29 +1,30 @@
+# Video Model Training Pipeline Configuration
+
 data:
-  raw_path: "data/splits/videos"
-  processed_path: "data/processed/frames"
-  video_extensions: [".mp4", ".avi", ".mov"]
+  raw_path: "data/raw/videos"
+  model_save_path: "models/video/best_weights.pth"
+  train_subset_size: 3000
+  tune_subset_size: 1000
 
-classes:
-  real: 0
-  fake: 1
+model:
+  frame_count: 32
+  frame_size: 224
+  hidden_dim: 256
+  dropout: 0.3
 
-frame_extraction:
-  num_frames: 16
-  method: "uniform"
-  min_frames_required: 10
+training:
+  batch_size: 8
+  learning_rate: 1e-4
+  phase1_epochs: 2
+  phase2_epochs: 8
+  phase1_lr: 1e-3
+  phase2_lr: 1e-5
+  pin_memory: True
+  num_workers: 0
 
-preprocessing:
-  image_size: 224
-  face_detection: "retinaface"
-  skip_no_face: true
-  save_format: "jpg"
-  jpeg_quality: 95
-
-splits:
-  train: 0.7
-  val: 0.15
-  test: 0.15
+tuning:
+  trials: 10
+  epochs_per_trial: 2
 
 logging:
-  verbose: true
-  save_failed_videos: true
+  level: "INFO"

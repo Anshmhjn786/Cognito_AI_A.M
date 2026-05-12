@@ -36,6 +36,9 @@ PROJECT_ROOT = BASE_DIR.parent.parent
 IMAGE_MODEL_CONFIG = PROJECT_ROOT / "configs" / "image_config.yaml"
 VIDEO_MODEL_CONFIG = PROJECT_ROOT / "configs" / "video_config.yaml"
 
+# Inference Logic Toggle
+USE_FALLBACK_VIDEO_PIPELINE = True
+
 # Logging Configuration
 LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 logging.basicConfig(
