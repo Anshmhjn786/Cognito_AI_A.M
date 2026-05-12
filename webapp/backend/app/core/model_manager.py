@@ -68,41 +68,29 @@ class ModelManager:
     @classmethod
     def get_video_model(cls):
         if "video" not in cls._instances:
-            logger.info("Loading Video Model...")
+            logger.info("Loading Video Model (X3D-M pretrained)...")
             config = load_config(str(VIDEO_MODEL_CONFIG))
             device = "cuda" if torch.cuda.is_available() else "cpu"
-            
-            # Use absolute path and check existence
-            if not os.path.exists(VIDEO_MODEL_PATH):
-                logger.error(f"CRITICAL: Video Model not found at {VIDEO_MODEL_PATH}")
-                raise FileNotFoundError(f"Video Model file missing: {VIDEO_MODEL_PATH}")
 
-            # 1. Initialize model without weights first
+            # X3D-M is initialized with pretrained hub weights — no local .pth required.
+            # If a fine-tuned checkpoint exists at VIDEO_MODEL_PATH, it is loaded on top
+            # with strict=False (optional, graceful).
+            checkpoint_path = VIDEO_MODEL_PATH if os.path.exists(VIDEO_MODEL_PATH) else None
+
+            if checkpoint_path:
+                logger.info(f"Fine-tuned checkpoint found: {checkpoint_path}")
+            else:
+                logger.info("No fine-tuned checkpoint found — using pretrained X3D-M weights.")
+
             model = load_video_model(
-                checkpoint_path=None, # Don't load weights yet to avoid crash
+                checkpoint_path=checkpoint_path,
                 device=device
             )
 
-            # 2. Manually load weights with debugging
-            logger.info(f"Loading video weights from {VIDEO_MODEL_PATH}...")
-            state_dict = torch.load(VIDEO_MODEL_PATH, map_location=device)
-            # Handle cases where checkpoint is a dict or just state_dict
-            state_dict = state_dict.get("model_state_dict", state_dict)
-            
-            # 3. Load weights with strict=False to trace mismatches
-            missing, unexpected = model.load_state_dict(state_dict, strict=False)
-            
-            logger.info("=== VIDEO MODEL LOAD DEBUG ===")
-            logger.info(f"Missing keys: {len(missing)}")
-            if missing: logger.info(f"First 5 missing: {missing[:5]}")
-            logger.info(f"Unexpected keys: {len(unexpected)}")
-            if unexpected: logger.info(f"First 5 unexpected: {unexpected[:5]}")
-            
-            if not missing and not unexpected:
-                logger.info("Video model weights loaded perfectly (Strict Match)")
-            else:
-                logger.info("Video model loaded with partial weights (Check debug logs)")
-            
+            logger.info("=== X3D VIDEO MODEL LOADED ===")
+            logger.info(f"Device: {device}")
+            logger.info(f"Checkpoint used: {checkpoint_path or 'Pretrained X3D-M (hub)'}")
+
             cls._instances["video"] = model
             cls._instances["video_config"] = config
             cls._instances["video_device"] = device
