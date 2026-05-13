@@ -55,7 +55,9 @@ def predict_video(
     confidence = probability if prediction == "FAKE" else 1.0 - probability
     
     return {
+        "status": "success",
+        "result": float(probability),
         "prediction": prediction,
         "confidence": float(confidence),
-        "explainability": None # Optional
+        "explainability": None
     }

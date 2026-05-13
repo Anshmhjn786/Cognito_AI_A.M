@@ -8,31 +8,23 @@ from typing import Optional, Union
 class DeepfakeVideoModel(nn.Module):
     """
     CNN + LSTM model architecture for video-based deepfake detection.
-    
-    The CNN (EfficientNet-B0) extracts frame-level features.
-    The LSTM captures temporal inconsistencies across the sequence.
+    EXACTLY aligned with training notebooks (03_train_video_model.ipynb).
     """
-    def __init__(self, feature_dim: int = 1280, hidden_dim: int = 256, num_layers: int = 1):
+    def __init__(self, hidden_dim: int = 256, dropout: float = 0.3):
         super().__init__()
         
-        # CNN Backbone (Feature Extractor)
-        # We remove the classifier to get raw features
-        cnn = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.DEFAULT)
-        self.feature_extractor = nn.Sequential(*list(cnn.children())[:-1])
+        # 1. Backbone: EfficientNet-B0 (Features + AvgPool)
+        backbone = models.efficientnet_b0(weights=models.EfficientNet_B0_Weights.IMAGENET1K_V1)
+        self.feature_extractor = nn.Sequential(*list(backbone.children())[:-1])
         
-        # LSTM Layer
-        self.lstm = nn.LSTM(
-            input_size=feature_dim, 
-            hidden_size=hidden_dim, 
-            num_layers=num_layers, 
-            batch_first=True
-        )
+        # 2. LSTM: Temporal modeling
+        self.lstm = nn.LSTM(1280, hidden_dim, batch_first=True)
         
-        # Final Classifier (Aligned with Training Notebook)
-        self.classifier = nn.Sequential(
+        # 3. Head: FC layers (MATCHED NAME: named 'fc' to align with trained weights)
+        self.fc = nn.Sequential(
             nn.Linear(hidden_dim, 64),
             nn.ReLU(),
-            nn.Dropout(0.3),
+            nn.Dropout(dropout),
             nn.Linear(64, 1)
         )
 
@@ -44,32 +36,40 @@ class DeepfakeVideoModel(nn.Module):
         
         # Reshape to [batch * frames, channels, height, width] for CNN
         x = x.view(batch_size * seq_len, c, h, w)
-        features = self.feature_extractor(x)  # [batch * frames, feature_dim, 1, 1]
-        features = features.view(batch_size, seq_len, -1)  # [batch, frames, feature_dim]
         
-        # LSTM
-        lstm_out, (h_n, c_n) = self.lstm(features)  # [batch, frames, hidden_dim]
+        # Extract features and flatten to [batch * frames, 1280]
+        f = self.feature_extractor(x).view(batch_size * seq_len, -1)
         
-        # Use the last hidden state for classification (Aligned with Training Notebook)
-        last_hidden = h_n[-1]  # [batch, hidden_dim]
+        # Reshape back to [batch, frames, 1280] for LSTM
+        f = f.view(batch_size, seq_len, -1)
         
-        logits = self.classifier(last_hidden)  # [batch, 1]
+        # LSTM: capture temporal patterns
+        _, (h_n, _) = self.lstm(f)
+        
+        # Use the last hidden state for classification (h_n shape: [num_layers, batch, hidden_dim])
+        logits = self.fc(h_n[-1])
+        
         return logits
 
 
 def load_video_model(
     checkpoint_path: Optional[Union[str, Path]] = None,
-    device: str = "cpu"
+    device: str = "cpu",
+    hidden_dim: int = 256
 ) -> DeepfakeVideoModel:
     """
     Load the video model with optional pretrained weights.
+    Strictly enforces architecture match.
     """
-    model = DeepfakeVideoModel()
+    model = DeepfakeVideoModel(hidden_dim=hidden_dim)
     
     if checkpoint_path:
         checkpoint = torch.load(checkpoint_path, map_location=device)
+        # Handle state_dict wrapped in a dictionary or direct state_dict
         state_dict = checkpoint.get("model_state_dict", checkpoint)
-        model.load_state_dict(state_dict)
+        
+        # Enforce strict loading to catch architecture mismatches early
+        model.load_state_dict(state_dict, strict=True)
         
     model.to(device)
     model.eval()

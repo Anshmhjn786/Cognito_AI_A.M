@@ -77,31 +77,26 @@ class ModelManager:
                 logger.error(f"CRITICAL: Video Model not found at {VIDEO_MODEL_PATH}")
                 raise FileNotFoundError(f"Video Model file missing: {VIDEO_MODEL_PATH}")
 
-            # 1. Initialize model without weights first
+            # 1. Initialize model with config parameters
+            hidden_dim = get_config_value(config, "model.hidden_dim", 256)
             model = load_video_model(
-                checkpoint_path=None, # Don't load weights yet to avoid crash
-                device=device
+                checkpoint_path=None, 
+                device=device,
+                hidden_dim=hidden_dim
             )
 
-            # 2. Manually load weights with debugging
+            # 2. Load weights from file
             logger.info(f"Loading video weights from {VIDEO_MODEL_PATH}...")
             state_dict = torch.load(VIDEO_MODEL_PATH, map_location=device)
-            # Handle cases where checkpoint is a dict or just state_dict
             state_dict = state_dict.get("model_state_dict", state_dict)
             
-            # 3. Load weights with strict=False to trace mismatches
-            missing, unexpected = model.load_state_dict(state_dict, strict=False)
-            
-            logger.info("=== VIDEO MODEL LOAD DEBUG ===")
-            logger.info(f"Missing keys: {len(missing)}")
-            if missing: logger.info(f"First 5 missing: {missing[:5]}")
-            logger.info(f"Unexpected keys: {len(unexpected)}")
-            if unexpected: logger.info(f"First 5 unexpected: {unexpected[:5]}")
-            
-            if not missing and not unexpected:
+            # 3. Enforce strict match to ensure architecture alignment
+            try:
+                model.load_state_dict(state_dict, strict=True)
                 logger.info("Video model weights loaded perfectly (Strict Match)")
-            else:
-                logger.info("Video model loaded with partial weights (Check debug logs)")
+            except Exception as e:
+                logger.error(f"CRITICAL: Video model architecture mismatch: {str(e)}")
+                raise RuntimeError(f"Video weights incompatible with model architecture: {str(e)}")
             
             cls._instances["video"] = model
             cls._instances["video_config"] = config
