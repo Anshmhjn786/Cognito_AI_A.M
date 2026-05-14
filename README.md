@@ -148,7 +148,7 @@ The backend provides a RESTful API for media analysis. Detailed documentation is
 
 ## 👥 Contributors
 
-- **Author:** [Your Name / Team Name]
+- **Authors:** Ajay Preet Singh | Ansh Mahajan 
 - **Project Link:** [https://github.com/Anshmhjn786/Cognito_AI_A.M](https://github.com/Anshmhjn786/Cognito_AI_A.M)
 
 ---
